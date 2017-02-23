@@ -1,0 +1,24 @@
+<setup>
+        <block title="CentralOps Configuration">
+        	<text>Leave fields blank if not required.</text>
+        </block>
+
+	<block title="General" endpoint="configs/conf-centralops" entity="general">
+                <input field="limit">
+                        <label>Default Search Query Limit (if not specified, the default is 5):</label>
+                        <type>text</type>
+                </input>
+	</block>
+
+	<block title="Proxy Settings" endpoint="configs/conf-centralops" entity="proxies">
+		<input field="http">
+			<label>HTTP:</label>
+			<type>text</type>
+		</input>
+
+		<input field="https">
+			<label>HTTPS:</label>
+			<type>text</type>
+		</input>
+	</block>
+</setup>
