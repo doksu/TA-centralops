@@ -70,7 +70,7 @@ class CentralOpsWhoisCommand(StreamingCommand):
             limit = default_limit
 
         url = "https://centralops.net/co/DomainDossier.aspx"
-        headers = {"Connection": "keep-alive", "Cache-Control": "max-age=0", "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8", "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.89 Safari/537.36", "Content-Type": "application/x-www-form-urlencoded", "Accept-Encoding": "gzip, deflate", "Accept-Language": "en-US;q=0.6,en;q=0.4"}
+        headers = {"Connection": "keep-alive", "Cache-Control": "max-age=0", "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8", "User-Agent": "Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:50.0) Gecko/20100101 Firefox/50.0", "Content-Type": "application/x-www-form-urlencoded", "Accept-Encoding": "gzip, deflate", "Accept-Language": "en-US;q=0.6,en;q=0.4"}
 
         threshold = 0
         for event in events:
