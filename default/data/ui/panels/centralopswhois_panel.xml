@@ -1,0 +1,14 @@
+<panel depends="$domain$">
+  <table>
+    <search>
+      <query>| stats count | eval _key="$domain$" | fields - count | lookup local=t centralopswhois_cache _key | centralopswhois _key | eval updated=if(isnull(updated),now(),updated) | rename _key_* AS * | outputlookup append=t centralopswhois_cache | fields - _key updated | transpose | rename column AS Field | rename "row 1" AS Value | sort 0 Field</query>
+      <earliest>0</earliest>
+      <latest></latest>
+    </search>
+    <option name="wrap">undefined</option>
+    <option name="rowNumbers">undefined</option>
+    <option name="drilldown">none</option>
+    <option name="dataOverlayMode">none</option>
+    <option name="count">100</option>
+  </table>
+</panel>

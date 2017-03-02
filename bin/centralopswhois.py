@@ -30,6 +30,8 @@ class CentralOpsWhoisCommand(StreamingCommand):
 
     def stream(self, events):
 
+        cache = {}
+
         if len(self.fieldnames) != 1:
             raise Exception("Please provide a single field")
 
@@ -75,53 +77,65 @@ class CentralOpsWhoisCommand(StreamingCommand):
         threshold = 0
         for event in events:
 
+            # if the event's whois information has already been found in the lookup cache
+            if "name_server" in event:
+               if str(event["name_server"]) != "":
+                   yield event
+                   continue
+
             if threshold == limit:
                yield event
                continue
 
             if self.fieldnames[0] in event:
 
-                parameters = "addr=" + str(event[self.fieldnames[0]]) + "&dom_whois=true"
-                request = urllib2.Request(url)
-
-                for key in headers:
-                    request.add_header(key, headers[key])
-
-                request.add_data(parameters)
-
-                if proxies['http'] is not None or proxies['https'] is not None:
-                    proxy = urllib2.ProxyHandler(proxies)
-                    opener = urllib2.build_opener(proxy)
-                    urllib2.install_opener(opener)
-
                 try:
-                    response = urllib2.urlopen(request, timeout=3)
-                    threshold += 1
+                    extracts = cache[str(event[self.fieldnames[0]])]
+
                 except:
-                    raise Exception("Failed to connect to centralops.net - please check TA-centralops app proxy settings")
 
-                if response.getcode()==200:
-                    if response.info().getheader("Content-Encoding")=="gzip":
-                        data = StringIO(response.read())
-                        gzipobject = gzip.GzipFile(fileobj=data)
-                        page = gzipobject.read()
+                    parameters = "addr=" + str(event[self.fieldnames[0]]) + "&dom_whois=true"
+                    request = urllib2.Request(url)
+
+                    for key in headers:
+                        request.add_header(key, headers[key])
+
+                    request.add_data(parameters)
+
+                    if proxies['http'] is not None or proxies['https'] is not None:
+                        proxy = urllib2.ProxyHandler(proxies)
+                        opener = urllib2.build_opener(proxy)
+                        urllib2.install_opener(opener)
+
+                    try:
+                        response = urllib2.urlopen(request, timeout=3)
+                        threshold += 1
+                    except:
+                        raise Exception("Failed to connect to centralops.net - please check TA-centralops app proxy settings")
+
+                    if response.getcode()==200:
+                        if response.info().getheader("Content-Encoding")=="gzip":
+                            data = StringIO(response.read())
+                            gzipobject = gzip.GzipFile(fileobj=data)
+                            page = gzipobject.read()
+                        else:
+                            page = response.read()
+
+                        extracts = re.findall(r'^(\w[\w\s]+):\s+(\S+.+)\r', page, re.MULTILINE)
+                        cache[str(event[self.fieldnames[0]])] = extracts
                     else:
-                        page = response.read()
+                        raise Exception("Received http response code status=" + str(response.getcode()) + " from centralops.net - please check your query limit hasn't been reached")
 
-                    extracts = re.findall(r'^(\w[\w\s]+):\s+(\S+.+)\r', page, re.MULTILINE)
+                extract_dict = {}
+                for kv_pair in extracts:
+                    key = str(self.fieldnames[0] + "_" + kv_pair[0].replace(" ", "_").lower())
+                    try:
+                        extract_dict[key] = extract_dict[key] + [str(kv_pair[1])]
+                    except:
+                        extract_dict[key] = [str(kv_pair[1])]
 
-                    extract_dict = {}
-                    for kv_pair in extracts:
-                        key = str(self.fieldnames[0] + "_" + kv_pair[0].replace(" ", "_").lower())
-                        try:
-                            extract_dict[key] = extract_dict[key] + [str(kv_pair[1])]
-                        except:
-                            extract_dict[key] = [str(kv_pair[1])]
-
-                    for key in extract_dict:
-                        event[key] = extract_dict[key]
-                else:
-                    raise Exception("Received http response code status=" + str(response.getcode()) + " from centralops.net - please check your query limit hasn't been reached")
+                for key in extract_dict:
+                    event[key] = extract_dict[key]
 
                 yield event
 
