@@ -2,20 +2,26 @@
 
 ## CentralOps Technology Add-On for Splunk
 
-CentralOps provides 50 free normalised whois lookups every 24hrs via their web interface. Enterprise Security has a workflow action ("Domain Dossier") which pivots on domain fields to their service, however it would be advantageous if that information could enrich events at search-time. This app provides a `... | centralopswhois [limit=#] <domain_field_name>` streaming search command that provides just that ability.
+CentralOps provides 50 free normalised whois lookups every 24hrs via their web interface. Enterprise Security has a workflow action ("Domain Dossier") which pivots on domain fields to their service, however it would be advantageous if that information could enrich events at search-time. This app provides a `... | centralopswhois [limit=#] <domain_field_name>` streaming search command providing just that ability.
 
 ### Usage example
 
 In searches designed to produce alerts (such as correlation searches), the centralopswhois command can be used to enrich events (if using ES, that enrichment is then included in the notables produced):
 
-    | tstats `summariesonly` values(DNS.src) as src_ip from datamodel=Network_Resolution.DNS where DNS.src="10.*" NOT DNS.query="*.in-addr.arpa" by DNS.query
+    | tstats `summariesonly` values(DNS.src) as src_ip from datamodel=Network_Resolution.DNS where NOT DNS.query="*.in-addr.arpa" by DNS.query
     | `drop_dm_object_name("DNS")`
     | eval domain=lower(query)
     | ...
+    | lookup local=t centralopswhois_cache _key AS domain
     | centralopswhois limit=2 domain
     | convert timeformat="%Y-%m-%dT%H:%M:%S%z" mktime(domain_creation_date)
     | eval now=now()
+    | eval updated=if(isnull(updated),now,updated)
+    | rename domain_* AS *
+    | outputlookup append=t centralopswhois_cache
     | where (now-domain_creation_date)<1209600                                \\ domains less than 2 weeks old
+
+Be sure to use the centralopswhois_cache lookup *before* the centralopswhois command, as it will not perform an external lookup if it has been retrieved from the cache (which is determined by the presence of a populated 'name_servers' field). Equally, updating the centralopswhois_cache lookup after the centralopswhois command is important so subsequent searches can use the cached information.
 
 ### Features
 
