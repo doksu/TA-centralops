@@ -8,14 +8,14 @@ CentralOps provides 50 free normalised whois lookups every 24hrs via their web i
 
 In searches designed to produce alerts (such as correlation searches), the centralopswhois command can be used to enrich events (if using ES, that enrichment is then included in the notables produced):
 
-| tstats `summariesonly` values(DNS.src) as src_ip from datamodel=Network_Resolution.DNS where DNS.src="10.*" NOT DNS.query="*.in-addr.arpa" by DNS.query
-| `drop_dm_object_name("DNS")`
-| eval domain=lower(query)
-| ...
-| centralopswhois limit=2 domain
-| convert timeformat="%Y-%m-%dT%H:%M:%S%z" mktime(domain_creation_date)
-| eval now=now()
-| where (now-domain_creation_date)<1209600                                \\ domains less than 2 weeks old
+    | tstats `summariesonly` values(DNS.src) as src_ip from datamodel=Network_Resolution.DNS where DNS.src="10.*" NOT DNS.query="*.in-addr.arpa" by DNS.query
+    | `drop_dm_object_name("DNS")`
+    | eval domain=lower(query)
+    | ...
+    | centralopswhois limit=2 domain
+    | convert timeformat="%Y-%m-%dT%H:%M:%S%z" mktime(domain_creation_date)
+    | eval now=now()
+    | where (now-domain_creation_date)<1209600                                \\ domains less than 2 weeks old
 
 ### Features
 
@@ -27,4 +27,4 @@ In searches designed to produce alerts (such as correlation searches), the centr
 
 ### Disclaimer
 
-The author has no affiliation whatsoever with the provider, and makes no guarantees about the quality or accuracy of the information provided.
+The author in no way endorses the provider's service, has no affiliation whatsoever with the provider, and makes no guarantees about the quality or accuracy of the information provided.
