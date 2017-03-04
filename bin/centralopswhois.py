@@ -86,8 +86,8 @@ class CentralOpsWhoisCommand(StreamingCommand):
         for event in events:
 
             # if the event's whois information has already been found in the lookup cache
-            if "name_server" in event:
-               if str(event["name_server"]) != "":
+            if "updated" in event:
+               if str(event["updated"]) != "":
                    yield event
                    continue
 
