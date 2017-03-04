@@ -32,6 +32,7 @@ Be sure to use the centralopswhois_cache lookup *before* the centralopswhois com
 - Proxy support (configurable via app setup page)
 - Whois dashboard and pre-built panel
 - Workflow actions providing pivot from domain fields to whois dashboard
+- Automatically summary indexes new whois records (disabled by default)
 
 ### Disclaimer
 
