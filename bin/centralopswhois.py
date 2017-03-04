@@ -9,6 +9,7 @@ import urllib2
 import re
 import gzip
 import ConfigParser
+import json
 
 
 @Configuration()
@@ -27,6 +28,7 @@ class CentralOpsWhoisCommand(StreamingCommand):
     """
 
     limit = Option(require=False, validate=validators.Integer(minimum=1))
+    output = Option(require=False)
 
     def stream(self, events):
 
@@ -34,6 +36,12 @@ class CentralOpsWhoisCommand(StreamingCommand):
 
         if len(self.fieldnames) != 1:
             raise Exception("Please provide a single field")
+
+        if self.output:
+            if self.output not in ("fields", "json"):
+                raise Exception("Invalid output format")
+        else:
+            self.output = "fields"
 
         default_limit = 5
         try:
@@ -127,15 +135,29 @@ class CentralOpsWhoisCommand(StreamingCommand):
                         raise Exception("Received http response code status=" + str(response.getcode()) + " from centralops.net - please check your query limit hasn't been reached")
 
                 extract_dict = {}
+                prefix = str(self.fieldnames[0] + "_")
+
                 for kv_pair in extracts:
-                    key = str(self.fieldnames[0] + "_" + kv_pair[0].replace(" ", "_").lower())
+
+                    if self.output == "json":
+                        key = str(kv_pair[0].replace(" ", "_").lower())
+                    else:
+                        key = str(prefix + kv_pair[0].replace(" ", "_").lower())
+
                     try:
                         extract_dict[key] = extract_dict[key] + [str(kv_pair[1])]
                     except:
                         extract_dict[key] = [str(kv_pair[1])]
 
-                for key in extract_dict:
-                    event[key] = extract_dict[key]
+                if len(extract_dict[key]) == 1:
+                    extract_dict[key] = extract_dict[key][0]
+
+                if self.output == "json":
+                    event[prefix + "whois"] = json.dumps(extract_dict)
+                        
+                else:
+                    for key in extract_dict:
+                        event[key] = extract_dict[key]
 
                 yield event
 

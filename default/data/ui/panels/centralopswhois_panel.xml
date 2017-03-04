@@ -1,7 +1,7 @@
 <panel depends="$domain$">
   <table>
     <search>
-      <query>| stats count | eval _key="$domain$" | fields - count | lookup local=t centralopswhois_cache _key | centralopswhois _key | eval updated=if(isnull(updated),now(),updated) | rename _key_* AS * | outputlookup append=t centralopswhois_cache | fields - _key updated | transpose | rename column AS Field | rename "row 1" AS Value | sort 0 Field</query>
+      <query>| stats count | eval _key="$domain$" | fields - count | lookup local=t centralopswhois_cache _key | centralopswhois output=json _key | eval updated=if(isnull(updated),now(),updated) | rename _key_* AS * | outputlookup append=t centralopswhois_cache | spath input=whois | fields - _key updated whois | rename *{} AS * | rename key_* AS * | transpose | rename column AS Field | rename "row 1" AS Value | sort 0 Field</query>
       <earliest>0</earliest>
       <latest></latest>
     </search>
