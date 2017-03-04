@@ -86,8 +86,8 @@ class CentralOpsWhoisCommand(StreamingCommand):
         for event in events:
 
             # if the event's whois information has already been found in the lookup cache
-            if "updated" in event:
-               if str(event["updated"]) != "":
+            if "centralopswhois_domain" in event:
+               if str(event["centralopswhois_domain"]) != "":
                    yield event
                    continue
 
@@ -149,10 +149,12 @@ class CentralOpsWhoisCommand(StreamingCommand):
                     except:
                         extract_dict[key] = [str(kv_pair[1])]
 
-                if len(extract_dict[key]) == 1:
-                    extract_dict[key] = extract_dict[key][0]
+                for key in extract_dict:
+                    if len(extract_dict[key]) == 1:
+                        extract_dict[key] = extract_dict[key][0]
 
                 if self.output == "json":
+                    extract_dict["centralopswhois_domain"] = str(event[self.fieldnames[0]])
                     event[prefix + "whois"] = json.dumps(extract_dict)
                         
                 else:

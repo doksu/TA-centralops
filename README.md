@@ -23,7 +23,7 @@ In searches designed to produce alerts (such as correlation searches), the centr
     | convert timeformat="%Y-%m-%dT%H:%M:%S%z" mktime(domain_creation_date)
     | where (now-domain_creation_date)<1209600                                \\ domains less than 2 weeks old
 
-Be sure to use the centralopswhois_cache lookup *before* the centralopswhois command, as it will not perform an external lookup if it has been retrieved from the cache (which is determined by the presence of a populated 'name_servers' field). Equally, updating the centralopswhois_cache lookup after the centralopswhois command is important so subsequent searches can use the cached information.
+Be sure to use the centralopswhois_cache lookup *before* the centralopswhois command, as it will not perform an external lookup if it has been retrieved from the cache (which is determined by the presence of a populated 'centralopswhois_domain' field). Equally, updating the centralopswhois_cache lookup after the centralopswhois command is important so subsequent searches can use the cached information.
 
 ### Features
 
