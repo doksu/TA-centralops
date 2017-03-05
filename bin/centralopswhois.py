@@ -86,8 +86,8 @@ class CentralOpsWhoisCommand(StreamingCommand):
         for event in events:
 
             # if the event's whois information has already been found in the lookup cache
-            if "centralopswhois_domain" in event:
-               if str(event["centralopswhois_domain"]) != "":
+            if "updated" in event:
+               if str(event["updated"]) != "":
                    yield event
                    continue
 
@@ -129,8 +129,9 @@ class CentralOpsWhoisCommand(StreamingCommand):
                         else:
                             page = response.read()
 
-                        extracts = re.findall(r'^(\w[\w\s]+):\s+(\S+.+)\r', page, re.MULTILINE)
+                        extracts = re.findall(r'^(?:<pre>)?(\w[\w\s]+):\s+(\S+.+)\r', page, re.MULTILINE)
                         cache[str(event[self.fieldnames[0]])] = extracts
+
                     else:
                         raise Exception("Received http response code status=" + str(response.getcode()) + " from centralops.net - please check your query limit hasn't been reached")
 
@@ -154,7 +155,7 @@ class CentralOpsWhoisCommand(StreamingCommand):
                         extract_dict[key] = extract_dict[key][0]
 
                 if self.output == "json":
-                    extract_dict["centralopswhois_domain"] = str(event[self.fieldnames[0]])
+                    extract_dict["resolved_domain"] = str(event[self.fieldnames[0]])
                     event[prefix + "whois"] = json.dumps(extract_dict)
                         
                 else:
