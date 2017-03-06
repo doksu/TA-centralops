@@ -10,6 +10,7 @@ import re
 import gzip
 import ConfigParser
 import json
+import time
 
 
 @Configuration()
@@ -101,6 +102,9 @@ class CentralOpsWhoisCommand(StreamingCommand):
                     extracts = cache[str(event[self.fieldnames[0]])]
 
                 except:
+
+                    if threshold > 0:
+                        time.sleep(1.4)
 
                     parameters = "addr=" + str(event[self.fieldnames[0]]) + "&dom_whois=true"
                     request = urllib2.Request(url)
