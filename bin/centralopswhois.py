@@ -106,7 +106,12 @@ class CentralOpsWhoisCommand(StreamingCommand):
                     if threshold > 0:
                         time.sleep(1.4)
 
-                    parameters = "addr=" + str(event[self.fieldnames[0]]) + "&dom_whois=true"
+                    # if the query is for an ip address
+                    if re.match('^\d+\.\d+.\d+\.\d+$', event[self.fieldnames[0]]):
+                        parameters = "addr=" + str(event[self.fieldnames[0]]) + "&net_whois=true"
+                    else:
+                        parameters = "addr=" + str(event[self.fieldnames[0]]) + "&dom_whois=true"
+
                     request = urllib2.Request(url)
 
                     for key in headers:

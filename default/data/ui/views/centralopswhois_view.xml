@@ -1,11 +1,11 @@
 <form>
   <label>Whois</label>
   <fieldset submitButton="false">
-    <input type="text" token="domain" searchWhenChanged="true">
-      <label>Domain</label>
+    <input type="text" token="query" searchWhenChanged="true">
+      <label>Domain or IP</label>
     </input>
   </fieldset>
   <row>
-    <panel ref="centralopswhois_panel" app="TA-centralops" depends="$domain$"></panel>
+    <panel ref="centralopswhois_panel" app="TA-centralops" depends="$query$"></panel>
   </row>
 </form>
