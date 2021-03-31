@@ -1,17 +1,23 @@
 #!/usr/bin/env python
 
 from splunklib.searchcommands import dispatch, StreamingCommand, Configuration, Option, validators
-from StringIO import StringIO
 import sys
 import os
 import socket
-import urllib2
 import re
 import gzip
-import ConfigParser
 import json
 import time
-
+try:
+    # python2
+    import ConfigParser as configparser
+    from StringIO import StringIO as BytesIO
+    import urllib2 as urllib_functions
+except:
+    # python3
+    import configparser
+    from io import BytesIO
+    import urllib.request as urllib_functions
 
 @Configuration()
 class CentralOpsWhoisCommand(StreamingCommand):
@@ -45,35 +51,54 @@ class CentralOpsWhoisCommand(StreamingCommand):
             self.output = "fields"
 
         default_limit = 5
+        general_config = None
         try:
-            configparser = ConfigParser.ConfigParser()
-            configparser.read(os.path.join(os.environ['SPLUNK_HOME'], 'etc/apps/TA-centralops/local/centralops.conf'))
-            
-            if configparser.has_section('general'): 
-                if configparser.has_option('general', 'limit'):
-                    config_value = configparser.get('general', 'limit')
-                    if config_value.isdigit() and config_value > 0:
-                        default_limit = config_value
-                        del config_value
-
+            general_config = ConfigParser.ConfigParser()
+            general_config.read(os.path.join(os.environ['SPLUNK_HOME'], 'etc/apps/TA-centralops/local/centralops.conf'))
         except:
-           pass
+            pass
+
+        # let's try reading the default config (to support Search Head Clusters where local configs are merged into default)
+        try:
+            general_config = ConfigParser.ConfigParser()
+            general_config.read(os.path.join(os.environ['SPLUNK_HOME'], 'etc/apps/TA-centralops/default/centralops.conf'))
+        except:
+            pass
+        
+        if not general_config == None:
+            if general_config.has_section('general'): 
+                if general_config.has_option('general', 'limit'):
+                    general_config_value = general_config.get('general', 'limit')
+                    if general_config_value.isdigit() and general_config_value > 0:
+                        default_limit = general_config_value
+                        del general_config_value
 
         proxies = {'http': None, 'https': None}
+        proxies_config = None
         try:
-            configparser = ConfigParser.ConfigParser()
-            configparser.read(os.path.join(os.environ['SPLUNK_HOME'], 'etc/apps/TA-centralops/local/centralops.conf'))
-
-            if configparser.has_section('proxies'):
-                if configparser.has_option('proxies', 'http'):
-                   if len(configparser.get('proxies', 'http')) > 0:
-                       proxies['http'] = configparser.get('proxies', 'http')
-                if configparser.has_option('proxies', 'https'):
-                   if len(configparser.get('proxies', 'https')) > 0:
-                       proxies['https'] = configparser.get('proxies', 'https')
+            proxies_config = ConfigParser.ConfigParser()
+            proxies_config.read(os.path.join(os.environ['SPLUNK_HOME'], 'etc/apps/TA-centralops/local/centralops.conf'))
 
         except:
             pass
+
+        # let's try reading the default config (to support Search Head Clusters where local configs are merged into default)
+        try:
+            if not proxies_config == None:
+               proxies_config = ConfigParser.ConfigParser()
+               proxies_config.read(os.path.join(os.environ['SPLUNK_HOME'], 'etc/apps/TA-centralops/default/centralops.conf'))
+
+        except:
+            pass
+
+        if not proxies_config == None:
+            if proxies_config.has_section('proxies'):
+                if proxies_config.has_option('proxies', 'http'):
+                   if len(proxies_config.get('proxies', 'http')) > 0:
+                       proxies['http'] = proxies_config.get('proxies', 'http')
+                if proxies_config.has_option('proxies', 'https'):
+                   if len(proxies_config.get('proxies', 'https')) > 0:
+                       proxies['https'] = proxies_config.get('proxies', 'https')
 
         if self.limit:
             limit = self.limit
@@ -81,7 +106,7 @@ class CentralOpsWhoisCommand(StreamingCommand):
             limit = default_limit
 
         url = "https://centralops.net/co/DomainDossier.aspx"
-        headers = {"Connection": "keep-alive", "Cache-Control": "max-age=0", "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8", "User-Agent": "Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:50.0) Gecko/20100101 Firefox/50.0", "Content-Type": "application/x-www-form-urlencoded", "Accept-Encoding": "gzip, deflate", "Accept-Language": "en-US;q=0.6,en;q=0.4"}
+        headers = {"Connection": "keep-alive", "Cache-Control": "max-age=0", "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8", "User-Agent": "Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:87.0) Gecko/20100101 Firefox/87.0", "Content-Type": "application/x-www-form-urlencoded", "Accept-Encoding": "gzip, deflate", "Accept-Language": "en-US;q=0.6,en;q=0.4"}
 
         threshold = 0
         for event in events:
@@ -112,7 +137,7 @@ class CentralOpsWhoisCommand(StreamingCommand):
                     else:
                         parameters = "addr=" + str(event[self.fieldnames[0]]) + "&dom_whois=true"
 
-                    request = urllib2.Request(url)
+                    request = urllib_functions.Request(url)
 
                     for key in headers:
                         request.add_header(key, headers[key])
@@ -120,25 +145,25 @@ class CentralOpsWhoisCommand(StreamingCommand):
                     request.add_data(parameters)
 
                     if proxies['http'] is not None or proxies['https'] is not None:
-                        proxy = urllib2.ProxyHandler(proxies)
-                        opener = urllib2.build_opener(proxy)
-                        urllib2.install_opener(opener)
+                        proxy = urllib_functions.ProxyHandler(proxies)
+                        opener = urllib_functions.build_opener(proxy)
+                        urllib_functions.install_opener(opener)
 
                     try:
-                        response = urllib2.urlopen(request, timeout=3)
+                        response = urllib_functions.urlopen(request, timeout=3)
                         threshold += 1
                     except:
                         raise Exception("Failed to connect to centralops.net - please check TA-centralops app proxy settings")
 
                     if response.getcode()==200:
                         if response.info().getheader("Content-Encoding")=="gzip":
-                            data = StringIO(response.read())
+                            data = BytesIO(response.read())
                             gzipobject = gzip.GzipFile(fileobj=data)
                             page = gzipobject.read()
                         else:
                             page = response.read()
 
-                        extracts = re.findall(r'^(?:<pre>)?(\w[\w\s]+):\s+(\S+.+)\r', page, re.MULTILINE)
+                        extracts = re.findall(b'^(?:<pre>)?(\w[\w\s]+):\s+(\S+.+)\r', page, re.MULTILINE)
                         cache[str(event[self.fieldnames[0]])] = extracts
 
                     else:
@@ -148,6 +173,9 @@ class CentralOpsWhoisCommand(StreamingCommand):
                 prefix = str(self.fieldnames[0] + "_")
 
                 for kv_pair in extracts:
+
+                    kv_pair[0] = kv_pair[0].decode('utf-8', 'ignore')
+                    kv_pair[1] = kv_pair[1].decode('utf-8', 'ignore')
 
                     if self.output == "json":
                         key = str(kv_pair[0].replace(" ", "_").lower())
