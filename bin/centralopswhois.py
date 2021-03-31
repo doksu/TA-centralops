@@ -142,7 +142,7 @@ class CentralOpsWhoisCommand(StreamingCommand):
                     for key in headers:
                         request.add_header(key, headers[key])
 
-                    request.add_data(parameters)
+                    request.data = parameters.encode("utf-8")
 
                     if proxies['http'] is not None or proxies['https'] is not None:
                         proxy = urllib_functions.ProxyHandler(proxies)
@@ -156,7 +156,7 @@ class CentralOpsWhoisCommand(StreamingCommand):
                         raise Exception("Failed to connect to centralops.net - please check TA-centralops app proxy settings")
 
                     if response.getcode()==200:
-                        if response.info().getheader("Content-Encoding")=="gzip":
+                        if response.getheader("Content-Encoding")=="gzip":
                             data = BytesIO(response.read())
                             gzipobject = gzip.GzipFile(fileobj=data)
                             page = gzipobject.read()
@@ -174,8 +174,8 @@ class CentralOpsWhoisCommand(StreamingCommand):
 
                 for kv_pair in extracts:
 
-                    kv_pair[0] = kv_pair[0].decode('utf-8', 'ignore')
-                    kv_pair[1] = kv_pair[1].decode('utf-8', 'ignore')
+                    # convert byte tuple to list of utf-8 strings
+                    kv_pair = [kv_pair[0].decode('utf-8', 'ignore'), kv_pair[1].decode('utf-8', 'ignore')]
 
                     if self.output == "json":
                         key = str(kv_pair[0].replace(" ", "_").lower())
